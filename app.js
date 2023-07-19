@@ -33,6 +33,9 @@ app.use(express.static('public'));
 app.use('/user',userRoute);
 app.use('/expense',expenseRoute);
 
+User.hasMany(Expense);
+Expense.belongsTo(User);
+
 sequelize.sync({alter : true})
 .then(result => {
   app.listen(3000, () => {
