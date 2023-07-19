@@ -1,5 +1,14 @@
 const Expense = require('../models/expenseModel');
 
+function isstringinvalid(string){
+    if(string == undefined || string.length === 0){
+        return true
+    }else{
+        return false
+    }
+}
+
+
 const addExpense = async(req, res, next) => {
     console.log(req.body);
 
@@ -8,12 +17,20 @@ const addExpense = async(req, res, next) => {
         const description = req.body.description;
         const category = req.body.category;
 
+        if(amount == undefined || amount.length === 0){
+            return res.status(400).json({success: false, message: 'Parameter missing'})
+        }
+
+        if(isstringinvalid(deleteExpense) || isstringinvalid(category)){
+            return res.status(400).json({success: false, message: 'Parameter missing'})
+        }
+
         const data = await Expense.create({
             amount: amount,
             description: description,
             category: category
         })
-        res.status(201).json({newExpenseDetails: data})
+        res.status(201).json({newExpenseDetails: data, success: true})
     }
     catch(err){
         console.log('error occurred during adding expenses',JSON.stringify(err));
@@ -23,14 +40,15 @@ const addExpense = async(req, res, next) => {
 
 
 //get Expense
+
 const getExpense = async (req,res,next) => {
     try{
-        const expenses = await Expense.findAll();
-        res.status(200).json({allExpenses: expenses})
+        const expenses = await Expense.findAll({where: {userId: req.user.id}})
+        return res.status(200).json({ expenses, success: true})
     }
     catch(err){
         console.log('error occurred during get expense',JSON.stringify(err));
-        res.status(500).json({error: err});
+        res.status(500).json({error: err, success: false});
     }
 }
 
@@ -38,8 +56,15 @@ const getExpense = async (req,res,next) => {
 //delete expense
 const deleteExpense = async (req,res,next) => {
     try{
-        const expense = await Expense.findAll();
-        res.status(200).json({allExpenses: expense})
+        const expenseId = req.params.expenseId;
+        if(expenseId == undefined || expenseId === 0){
+            return res.status(400).json({success:false, message:'Parameters are missing'})
+        }
+        const noOfRows = await Expense.destroy({where: {id: expenseId}})
+            if(noOfRows === 0){
+                return res.status(404).json({success: false, message: 'Expense doenst belong to the user'})
+            }    
+            return res.status(200).json({ success: true, message: "Deleted Successfuly"})
     }
     catch(err){
         console.log('error occurred during delete expense',JSON.stringify(err));
