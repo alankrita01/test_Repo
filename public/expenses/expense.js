@@ -1,4 +1,4 @@
-const { response } = require("express");
+
 
 //add Expense
 async function expense(e){
@@ -12,8 +12,9 @@ async function expense(e){
         const expenseDetails = {
             amount : amount,
             description : description,
-            category : category
-        };
+            category : category,
+            userId : 1
+        }
 
         const response = await axios.post('http://localhost:3000/expense/add-expense',expenseDetails)
         showOnScreen(response.data.newExpenseDetails);
@@ -27,43 +28,52 @@ async function expense(e){
 //get expense
 window.addEventListener("DOMContentLoaded",async (e) => {
     try{
-        for(var i=0; i<response.data.allExpenses.length;i++){
-            showOnScreen(response.data.allExpenses[i]);
-        }
+        const token = localStorage.getItem('token')
+        const response = await axios.get("http:localhost:3000/expense/get-expense", {headers: {"Authorization":token}})
+        //console.log(response)
+        response.data.expenses.forEach(expense => {
+            showOnScreen(expense);
+        })
     }
     catch(err){
         console.log(err);
     }
-
 })
 
+
 //show expense details on screen
-function showOnScreen(user) {
-    const parentNode = document.getElementById("listOfUser");
+function showOnScreen(expense) {
+    
+    const parentNode = document.getElementById("listOfExpenses");
+    const expenseId = `expense-${expense.id}`;
 
-    const childHTML = `<li id=${user.id}> ${user.amount} - ${user.description} - ${user.category} 
-    <button style="margin: 5px; padding-left: 7px; padding-right: 7px; color:green; font-weight: bold;" onclick=editUserDetails('${user.description}','${user.amount}','${user.category}','${user.id}')>Edit</button>
-    <button style="margin: 7px; padding-left: 7px; padding-right: 5px;  color:red; font-weight: bold;" onclick=deleteUser('${user.id}')>Delete</button><br> </li>`;
+    const childHTML = `<li id=${expenseId}> ${expense.amount} - ${expense.description} - ${expense.category} 
+    <button style="margin: 5px; padding-left: 7px; padding-right: 7px; color:green; font-weight: bold;" onclick=editExpenseDetails('${expense.description}','${expense.amount}','${expense.category}','${expense.id}')>Edit</button>
+    <button style="margin: 7px; padding-left: 7px; padding-right: 5px;  color:red; font-weight: bold;" onclick=deleteExpense('${expense.id}')>Delete</button><br> </li>`;
 
-    parentNode.innerHTML = parentNode.innerHTML + childHTML;
+    parentNode.innerHTML += childHTML;
 }
 
+
 //edit expense
-function editUserDetails(description,amount, category, userId) {
+function editExpenseDetails(description,amount, category, expenseId) {
   
     document.getElementById("description").value = description;
     document.getElementById("amount").value = amount;
     document.getElementById("category").value = category;
 
-    deleteExpense(userId);
-
+    deleteExpense(expenseId);
 }
 
+
 //delete expense
-async function deleteExpense(userId){
+async function deleteExpense(expenseId){
+    console.log('ala')
     try{
-        const response = await axios.delete(`http://localhost:3000/expense/delete-expense/${userId}`)
-        removeUserFromScreen(userId)
+        console.log('try')
+        await axios.delete(`http://localhost:3000/expense/delete-expense/${expenseId}`)
+        //console.log(response);
+        removeUserFromScreen(expenseId);
     }
     catch(err){
         console.log(err);
@@ -71,11 +81,28 @@ async function deleteExpense(userId){
 }
 
 //remove expense
-function removeUserFromScreen(userId) {
-    const parentNode = document.getElementById("listOfUser");
-    const childNodeToBeDeleted = document.getElementById(userId);
+/*function removeUserFromScreen(expenseId) {
+    console.log('r',expenseId)
+    const parentNode = document.getElementById("listOfExpenses");
+    const childNodeToBeDeleted = document.getElementById(expenseId);
+  
+    console.log(childNodeToBeDeleted);
+    if (childNodeToBeDeleted) {
+      parentNode.removeChild(childNodeToBeDeleted);
+    }
+}*/
+function removeUserFromScreen(expenseId) {
+    console.log('r', expenseId);
+    const expenseElemId = `expense-${expenseId}`;
+    const parentNode = document.getElementById("listOfExpenses");
+    const childNodeToBeDeleted = document.getElementById(expenseElemId);
+  
+    console.log('parentNode:', parentNode);
+    console.log('childNodeToBeDeleted:', childNodeToBeDeleted);
   
     if (childNodeToBeDeleted) {
       parentNode.removeChild(childNodeToBeDeleted);
+    } else {
+      console.log('Element with expenseId not found.');
     }
   }
