@@ -1,10 +1,10 @@
-const Sequelize = require('sequelize');
+const Sequelize = require('sequelize')
 
-const sequelize = new Sequelize(
-    'expense','root','mysql123',{
-        dialect : 'mysql',
-        host : 'localhost'
-    }
-);
+require('dotenv').config() 
 
-module.exports = sequelize;
+const sequelize = new Sequelize('alankar', 'root', 'Bucketone23@', {
+    dialect: 'mysql',
+    host: 'localhost'
+})
+
+module.exports = sequelize

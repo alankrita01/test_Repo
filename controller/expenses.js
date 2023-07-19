@@ -28,7 +28,8 @@ const addExpense = async(req, res, next) => {
         const data = await Expense.create({
             amount: amount,
             description: description,
-            category: category
+            category: category,
+            userId:req.user.id
         })
         res.status(201).json({newExpenseDetails: data, success: true})
     }

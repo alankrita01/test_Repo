@@ -13,10 +13,10 @@ async function expense(e){
             amount : amount,
             description : description,
             category : category,
-            userId : 1
+            
         }
-
-        const response = await axios.post('http://localhost:3000/expense/add-expense',expenseDetails)
+        const token = localStorage.getItem('token')
+        const response = await axios.post('http://localhost:3000/expense/add-expense',expenseDetails, {headers: {'Authorization' : token}})
         showOnScreen(response.data.newExpenseDetails);
     }
     catch(err){
