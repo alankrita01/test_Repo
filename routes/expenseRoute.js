@@ -9,7 +9,8 @@ router.post('/add-expense',userAuthentication.authenticate, expenseController.ad
 
 router.get('/get-expense',userAuthentication.authenticate, expenseController.getExpense);
 
-router.delete('/delete-expense/:expenseId',expenseController.deleteExpense);
+// router.delete('/delete-expense/:expenseId',expenseController.deleteExpense);
+router.delete('/delete-expense/:expenseId',userAuthentication.authenticate,expenseController.deleteExpense);
 
 
 module.exports = router;

@@ -1,5 +1,3 @@
-
-
 //add Expense
 async function expense(e){
     try{
@@ -12,11 +10,11 @@ async function expense(e){
         const expenseDetails = {
             amount : amount,
             description : description,
-            category : category,
-            
+            category : category
         }
+
         const token = localStorage.getItem('token')
-        const response = await axios.post('http://localhost:3000/expense/add-expense',expenseDetails, {headers: {'Authorization' : token}})
+        const response = await axios.post('http://localhost:3000/expense/add-expense',expenseDetails, {headers: {"Authorization" : token}})
         showOnScreen(response.data.newExpenseDetails);
     }
     catch(err){
@@ -25,11 +23,37 @@ async function expense(e){
     }
 }
 
+function showPremiumuserMessage(){
+    document.getElementById('premium_button').style.visibility = "hidden"
+    document.getElementById('message').innerHTML = "You are a premium user"
+}
+
+function parseJwt (token) {
+    var base64Url = token.split('.')[1];
+    var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+
+    return JSON.parse(jsonPayload);
+}
+
+
 //get expense
 window.addEventListener("DOMContentLoaded",async (e) => {
     try{
         const token = localStorage.getItem('token')
-        const response = await axios.get("http:localhost:3000/expense/get-expense", {headers: {"Authorization":token}})
+        
+
+        const decodeToken = parseJwt(token);
+        console.log(decodeToken);
+        const ispremiumuser = decodeToken.ispremiumuser
+        if(ispremiumuser){
+            showPremiumuserMessage()
+            showLeaderboard()
+        }
+
+        const response = await axios.get("http:localhost:3000/expense/get-expense", {headers: {"Authorization" : token}})
         //console.log(response)
         response.data.expenses.forEach(expense => {
             showOnScreen(expense);
@@ -37,6 +61,7 @@ window.addEventListener("DOMContentLoaded",async (e) => {
     }
     catch(err){
         console.log(err);
+        console.log('error occured in frontend get-expense')
     }
 })
 
@@ -48,30 +73,19 @@ function showOnScreen(expense) {
     const expenseId = `expense-${expense.id}`;
 
     const childHTML = `<li id=${expenseId}> ${expense.amount} - ${expense.description} - ${expense.category} 
-    <button style="margin: 5px; padding-left: 7px; padding-right: 7px; color:green; font-weight: bold;" onclick=editExpenseDetails('${expense.description}','${expense.amount}','${expense.category}','${expense.id}')>Edit</button>
-    <button style="margin: 7px; padding-left: 7px; padding-right: 5px;  color:red; font-weight: bold;" onclick=deleteExpense('${expense.id}')>Delete</button><br> </li>`;
+    <button style="margin: 7px; padding-left: 7px; padding-right: 5px;  color:red; font-weight: bold;" onclick=deleteExpense('${expense.id}')>Delete Expense</button><br> </li>`;
 
     parentNode.innerHTML += childHTML;
 }
 
 
-//edit expense
-function editExpenseDetails(description,amount, category, expenseId) {
-  
-    document.getElementById("description").value = description;
-    document.getElementById("amount").value = amount;
-    document.getElementById("category").value = category;
-
-    deleteExpense(expenseId);
-}
-
-
 //delete expense
 async function deleteExpense(expenseId){
-    console.log('ala')
+    
     try{
-        console.log('try')
-        await axios.delete(`http://localhost:3000/expense/delete-expense/${expenseId}`)
+      
+        const token = localStorage.getItem('token')
+        await axios.delete(`http://localhost:3000/expense/delete-expense/${expenseId}`, {headers: {"Authorization" : token}})
         //console.log(response);
         removeUserFromScreen(expenseId);
     }
@@ -80,29 +94,75 @@ async function deleteExpense(expenseId){
     }
 }
 
-//remove expense
-/*function removeUserFromScreen(expenseId) {
-    console.log('r',expenseId)
-    const parentNode = document.getElementById("listOfExpenses");
-    const childNodeToBeDeleted = document.getElementById(expenseId);
-  
-    console.log(childNodeToBeDeleted);
-    if (childNodeToBeDeleted) {
-      parentNode.removeChild(childNodeToBeDeleted);
+
+function showError(err){
+    document.body.innerHTML += `<div style="color:red;">${err}<\div>`
+}
+
+
+function showLeaderboard(){
+    const inputElement = document.createElement("input")
+    inputElement.type = "button"
+    inputElement.value = 'Show Leaderboard'
+
+    inputElement.onclick = async() => {
+        const token = localStorage.getItem('token')
+        const userLeaderBoardArray = await axios.get(`http://localhost:3000/premium/showLeaderBoard`,{headers: {"Authorization" : token}})
+        console.log(userLeaderBoardArray);
+
+        var leaderboardElem = document.getElementById('leaderboard')
+        leaderboardElem.innerHTML += `<h1> Leader Board </h1>`
+        userLeaderBoardArray.data.forEach((userDeatils) => {
+            leaderboardElem.innerHTML += `<li>Name - ${userDeatils.name} Total Expense - ${userDeatils.total_cost || 0} </li>`
+        })
     }
-}*/
+    document.getElementById("message").appendChild(inputElement);
+}
+
+
 function removeUserFromScreen(expenseId) {
-    console.log('r', expenseId);
+    console.log('expenseID >>>>', expenseId);
     const expenseElemId = `expense-${expenseId}`;
-    const parentNode = document.getElementById("listOfExpenses");
-    const childNodeToBeDeleted = document.getElementById(expenseElemId);
-  
-    console.log('parentNode:', parentNode);
-    console.log('childNodeToBeDeleted:', childNodeToBeDeleted);
-  
-    if (childNodeToBeDeleted) {
-      parentNode.removeChild(childNodeToBeDeleted);
-    } else {
-      console.log('Element with expenseId not found.');
+    document.getElementById(expenseElemId).remove();
+  }
+
+
+  document.getElementById('premium_button').onclick = async function(e) {
+    try{
+        const token = localStorage.getItem('token')
+        const response = await axios.get('http://localhost:3000/purchase/premium-membership',{headers: {"Authorization" : token}})
+        console.log(response);
+        
+        var options =
+        {
+            "key": response.data.key_id,  //Enter key ID generated from the dashboard
+            "order_id": response.data.order.id, //for one time payment
+            //this handler function will handle the success payment
+            
+            "handler": async function(response){
+                const res = await axios.post('http://localhost:3000/purchase/update-transactionstatus',{
+                    order_id: options.order_id,
+                    payment_id: response.razorpay_payment_id,
+                },{headers: {"Authorization" : token}})
+
+                console.log(res);
+                alert('you are a premium user now')
+                document.getElementById('premium_button').style.visibility = "hidden"
+                document.getElementById('message').innerHTML = "You are a premium user"
+                localStorage.setItem('token', res.data.token)
+            },
+        }
+        const rzp1 = new Razorpay(options);
+        rzp1.open();
+        e.preventDefault();
+
+        rzp1.on('payment.failed', function(response){
+            console.log(response)
+            alert('something went wrong')
+        })
+
+    }
+    catch(err){
+        console.log(err);
     }
   }
